@@ -37,9 +37,15 @@ void AudioManager::shutdown()
 
     if (m_initialized)
     {
-        UnloadMusicStream(m_menuMusic);
-        UnloadMusicStream(m_gameMusic);
-        UnloadMusicStream(m_gameOverMusic);
+        if (m_menuMusic.stream.buffer != nullptr)
+            UnloadMusicStream(m_menuMusic);
+
+        if (m_gameMusic.stream.buffer != nullptr)
+            UnloadMusicStream(m_gameMusic);
+
+        if (m_gameOverMusic.stream.buffer != nullptr)
+            UnloadMusicStream(m_gameOverMusic);
+
         CloseAudioDevice();
         m_initialized = false;
     }
@@ -118,4 +124,3 @@ void AudioManager::update()
     if (!m_initialized || !m_current) return;
     UpdateMusicStream(*m_current);
 }
-
