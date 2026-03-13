@@ -18,7 +18,7 @@
 9. [Project Structure](#9-project-structure)
 10. [Architecture](#10-architecture)
 11. [Tuning](#11-tuning)
-12. [Scoring](#-scoring)
+12. [Scoring](#12-scoring)
     
 ---
 ## 1. Project Overview and Requirements
@@ -223,3 +223,4 @@ static const float WAVE_DURATION     = 30.0f;
 Score is tracked in `Game` and displayed in the top-right corner during play. Your final score and wave reached are shown on the game over screen.
 
 ---
+
