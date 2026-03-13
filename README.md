@@ -10,12 +10,16 @@
 1. [Project Overview and Requirements](#1-project-overview-and-requirements)
 2. [Gameplay](#2-gameplay)
 3. [Controls](#3-controls)
-4. [Vector Functions](#4-vector-functions--deep-analysis)
-5. [Game Systems](#5-game-systems--implementation-analysis)
-6. [Bugs Encountered](#6-bugs-encountered--root-cause-analysis)
-7. [Why Vectors and Matrices Matter in Game Development](#7-why-vectors-and-matrices-matter-in-game-development)
-8. [Course Reflection](#8-technical-reflection)
-
+4. [Weapons](#4-weapons)
+5. [HUD](#5-hud)
+6. [Building](#6-building)
+7. [Build Steps](#7-build-steps)
+8. [Clean Build](#8-clean-build)
+9. [Project Structure](#9-project-structure)
+10. [Architecture](#10-architecture)
+11. [Tuning](#11-tuning)
+12. [Scoring](#-scoring)
+    
 ---
 ## 1. Project Overview and Requirements
 
@@ -40,7 +44,7 @@ This document provides a reflection on the development of my Vampire-Survivor-In
    
 ## 2. Gameplay
 
-Enemies spawn in waves that last for 30 seconds. Each wave brings more enemies. Survive all enemies in a wave before the next one begins. The game ends when your health reaches zero or if you don't complete a wave and the timer runs out.
+Enemies spawn in waves that last for 30 seconds. Each wave brings more enemies. Survive all enemies in a wave before the next one begins. The game ends when your health reaches zero or if you don't complete a wave and the wave timer runs out.
 
 **Zombies** are fast and low health. **Tanks** are slow and heavily armored. Tanks begin spawning from wave 2 and onwards.
 
@@ -60,18 +64,18 @@ Enemies spawn in waves that last for 30 seconds. Each wave brings more enemies. 
 
 ---
 
-## Weapons
+## 4. Weapons
 
-| Weapon | Damage | Fire Rate | Bullet Color |
-|--------|--------|-----------|--------------|
-| Pistol | 20 | Fast (0.18s) | Cyan |
-| Sniper | 90 | Slow (0.85s) | Orange |
+| Weapon | Damage | Fire Rate | Bullet Speed | Bullet Color | Description |
+|--------|--------|-----------|--------------|--------------|-------------|
+| Pistol | 20 | Fast (0.18s) | 650 | Purple | Default weapon, reliable all-rounder
+| Sniper | 90 | Slow (0.85s) | 1200 | Orange | High damage, requires precise aim
 
-Swap between them at any time with `Q`. The fire rate bar in the HUD shows when you can shoot again.
+Swap between them at any time with `Q`. The fire rate bar in the HUD shows when you can shoot again and also changes color to match the weapon you've swapped to.
 
 ---
 
-## HUD
+## 5. HUD
 
 The bottom-left corner shows three stacked elements:
 
@@ -83,16 +87,16 @@ Score is displayed in the top-right. The wave number and wave timer are centered
 
 ---
 
-## Building
+## 6. Building
 
-### Requirements
+### Build System
 
-- Linux (tested on Ubuntu 24)
+- Linux (tested Pop! OS with COSMIC Desktop)
 - g++ with C++17 support
 - raylib (downloaded automatically by premake on first build)
 - premake5 (included in `build/`)
 
-### Build Steps
+### 7. Build Steps
 
 ```bash
 cd build
@@ -103,7 +107,7 @@ make
 
 The compiled binary will be at `bin/Debug/ZombieGame`.
 
-### Clean Build
+### 8. Clean Build
 
 ```bash
 make clean
@@ -112,52 +116,48 @@ cd build && ./premake5 gmake && cd .. && make
 
 ---
 
-## Project Structure
+## 9. Project Structure
 
 ```
 project/
 ├── build/
-│   └── premake5.lua        — build configuration
-├── include/
-│   ├── Constants.h         — all tunable values (screen size, speeds, damage, etc.)
-│   ├── IGameState.h        — state pattern interface
-│   ├── Game.h              — central game class
-│   ├── GameStates.h        — four concrete states
-│   ├── Player.h
-│   ├── Weapon.h
-│   ├── BulletPool.h        — singleton bullet pool
-│   ├── Enemy.h
-│   └── WaveManager.h
-├── src/
-│   ├── main.cpp            — entry point
-│   ├── Game.cpp
-│   ├── GameStates.cpp
-│   ├── Player.cpp
-│   ├── Weapon.cpp
-│   ├── BulletPool.cpp
-│   ├── Enemy.cpp
-│   └── WaveManager.cpp
+│   └── premake5.lua           — build configuration
+├── include/src
+│   ├── main.cpp               — entry point
+│   ├── Game.h / .cpp          — Core game loop and state machine
+│   ├── IGameState.h           — state pattern interface
+│   ├── GameStates.h / .cpp    — four concrete states
+│   ├── Player.h / .cpp        — player movement, shooting, health, and rendering
+│   ├── Weapon.h / .cpp        — pistol and sniper weapon logic
+│   ├── BulletPool.h / .cpp    — singleton bullet pool: fixed size bullet pool (256 bullets)
+│   ├── Enemy.h / .cpp         — zombie and tank enemy behavior
+│   └── WaveManager.h / .cpp   — wave scheduling and enemy spawning
+|   └── AudioManager.h / .cpp  — singleton that handles music for the game and volume ducking
+│   ├── Constants.h            — all tunable game constants
+│   ├── resource_dir.h         — utility to locate the resource folder
 └── README.md
 ```
 
 ---
 
-## Architecture
+## 10. Architecture
 
 ### State Pattern
 
-The game uses a state machine to keep `main.cpp` lean and separate concerns cleanly. `IGameState` is a pure interface that all states implement. `Game` holds a map of all four states and a pointer to the current one. Each frame it calls `handleInput`, `update`, and `draw` on the active state. Transitions call `exit()` on the old state and `enter()` on the new one.
+The game uses a state machine to keep `main.cpp` lean and clean. `IGameState` is a pure interface that all states implement. `Game` holds all four states and a pointer to the current one. Each frame it calls `handleInput`, `update`, and `draw` on the active state. Transitions call `exit()` on the old state and `enter()` on the new one.
 
 | State | Entered when |
 |-------|-------------|
 | `MainMenuState` | Game starts, or returning from game over |
 | `PlayingState` | Player starts or resets the game |
 | `PausedState` | ESC is pressed during play |
-| `GameOverState` | Player health reaches zero |
+| `GameOverState` | Player health reaches zero or timer runs out |
 
 ### Singleton Pattern
 
 `BulletPool` is a singleton accessed via `BulletPool::instance()`. It owns a fixed array of 256 `Bullet` structs. Bullets are never heap allocated — spawning fills the first inactive slot, and deactivating just flips a boolean. This makes it accessible from `Weapon::fire()` without needing to pass references down through `Player → Weapon`.
+
+`AudioManager` is a singelton that manages four pieces of music: MenuMusic, GameMusic, Pause Music and GameOverMusic. Supports volume ducking when the game is paused.
 
 ### Ownership Hierarchy
 
@@ -178,7 +178,7 @@ States do not own any game data — they borrow references to `Game` and its con
 
 ---
 
-## Tuning
+## 11. Tuning
 
 All gameplay values are in `include/Constants.h`. Change any of these and recompile:
 
@@ -213,7 +213,7 @@ static const float WAVE_DURATION     = 30.0f;
 
 ---
 
-## Scoring
+## 12. Scoring
 
 | Kill | Points |
 |------|--------|
@@ -221,3 +221,5 @@ static const float WAVE_DURATION     = 30.0f;
 | Tank | 30 |
 
 Score is tracked in `Game` and displayed in the top-right corner during play. Your final score and wave reached are shown on the game over screen.
+
+---
