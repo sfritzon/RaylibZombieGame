@@ -44,7 +44,7 @@ This document provides a reflection on the development of my Vampire-Survivor-In
    
 ## 2. Gameplay
 
-Enemies spawn in waves that last for 30 seconds. Each wave brings more enemies. Survive all enemies in a wave before the next one begins. The game ends when your health reaches zero or if you don't complete a wave and the wave timer runs out.
+Enemies spawn in waves that last for 30 seconds. Each wave brings more enemies. Survive all enemies in a wave before the next one begins. The game ends when your health reaches zero or if you don't complete a wave and the wave timer runs out. There is no health-gen so keep dodging! 
 
 **Zombies** are fast and low health. **Tanks** are slow and heavily armored. Tanks begin spawning from wave 2 and onwards.
 
@@ -223,4 +223,5 @@ static const float WAVE_DURATION     = 30.0f;
 Score is tracked in `Game` and displayed in the top-right corner during play. Your final score and wave reached are shown on the game over screen.
 
 ---
+
 
