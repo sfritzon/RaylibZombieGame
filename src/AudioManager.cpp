@@ -124,3 +124,4 @@ void AudioManager::update()
     if (!m_initialized || !m_current) return;
     UpdateMusicStream(*m_current);
 }
+
