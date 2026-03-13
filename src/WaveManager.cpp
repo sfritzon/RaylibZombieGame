@@ -80,10 +80,10 @@ void WaveManager::spawnEnemy(EnemyType type)
 }
 
 
-void WaveManager::update(float dt) 
+bool WaveManager::update(float deltaTime) 
 {
     // Update wave timer
-    if (m_waveTimer > 0.0f) m_waveTimer -= dt;
+    if (m_waveTimer > 0.0f) m_waveTimer -= deltaTime;
     if (m_waveTimer < 0.0f) m_waveTimer = 0.0f;
 
     // Process spawn groups
@@ -92,7 +92,7 @@ void WaveManager::update(float dt)
         SpawnGroup& g = m_groups[m_groupIndex];
         if (g.active && g.remaining > 0) 
         {
-            g.timer -= dt;
+            g.timer -= deltaTime;
             if (g.timer <= 0.0f) 
             {
                 spawnEnemy(g.type);
@@ -110,7 +110,7 @@ void WaveManager::update(float dt)
 
         else if (!g.active || m_betweenGroupTimer > 0.0f) 
         {
-            m_betweenGroupTimer -= dt;
+            m_betweenGroupTimer -= deltaTime;
             if (m_betweenGroupTimer <= 0.0f) m_groupIndex++;
         } 
         
@@ -135,6 +135,12 @@ void WaveManager::update(float dt)
         startNextWave();
     }
 
+    if (m_waveTimer <= 0.0f && alive > 0)
+    {
+        return true;
+    }
+
+    return false;
 }
 
 

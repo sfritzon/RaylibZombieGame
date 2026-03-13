@@ -20,7 +20,7 @@ class WaveManager
 {
 public:
     void reset();
-    void update(float dt);
+    bool update(float dt);
     void draw() const;
 
     int getWave() const { return m_wave; }

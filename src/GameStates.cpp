@@ -166,7 +166,7 @@ void PlayingState::handleInput(Game& game)
 void PlayingState::update(Game& game, float deltaTime) 
 {
     Player& player = game.getPlayer();
-    WaveManager& wm = game.getWaveManager();
+    WaveManager& waveManager = game.getWaveManager();
 
     player.handleInput(deltaTime);
     player.update(deltaTime);
@@ -176,7 +176,7 @@ void PlayingState::update(Game& game, float deltaTime)
     // Update enemies, deal damage to player
     for (int i = 0; i < MAX_ENEMIES; ++i) 
     {
-    Enemy& e = wm.getEnemies()[i];
+    Enemy& e = waveManager.getEnemies()[i];
     if (!e.active) continue;
 
     // Check if enemy is touching player
@@ -201,7 +201,8 @@ void PlayingState::update(Game& game, float deltaTime)
 
     updateBulletEnemyCollisions(game);
 
-    wm.update(deltaTime);
+    if (waveManager.update(deltaTime))
+        game.changeState(GameStateID:: GAME_OVER);
 
     if (player.isDead()) game.changeState(GameStateID::GAME_OVER);
 }
@@ -210,7 +211,7 @@ void PlayingState::update(Game& game, float deltaTime)
 void PlayingState::updateBulletEnemyCollisions(Game& game) 
 {
     BulletPool& pool = BulletPool::instance();
-    WaveManager& wm = game.getWaveManager();
+    WaveManager& waveManager = game.getWaveManager();
 
     for (int bi = 0; bi < MAX_BULLETS; ++bi) 
     {
@@ -219,7 +220,7 @@ void PlayingState::updateBulletEnemyCollisions(Game& game)
 
         for (int ei = 0; ei < MAX_ENEMIES; ++ei) 
         {
-            Enemy& e = wm.getEnemies()[ei];
+            Enemy& e = waveManager.getEnemies()[ei];
             if (!e.active) continue;
 
             float dx = b.position.x - e.position.x;
@@ -300,14 +301,14 @@ void PlayingState::draw(Game& game)
     // World objects
     BulletPool::instance().draw();
 
-    WaveManager& wm = game.getWaveManager();
+    WaveManager& waveManager = game.getWaveManager();
     for (int i = 0; i < MAX_ENEMIES; ++i)
-        wm.getEnemies()[i].draw();
+        waveManager.getEnemies()[i].draw();
 
     game.getPlayer().draw();
 
     // HUD
-    wm.draw();
+    waveManager.draw();
     drawHUD(game);
 }
 
@@ -345,8 +346,8 @@ void PausedState::draw(Game& game)
         DrawLine(0, y, SCREEN_WIDTH, y, { 25, 30, 45, 255 });
 
     BulletPool::instance().draw();
-    WaveManager& wm = game.getWaveManager();
-    for (int i = 0; i < MAX_ENEMIES; ++i) wm.getEnemies()[i].draw();
+    WaveManager& waveManager = game.getWaveManager();
+    for (int i = 0; i < MAX_ENEMIES; ++i) waveManager.getEnemies()[i].draw();
     game.getPlayer().draw();
 
     // Overlay
