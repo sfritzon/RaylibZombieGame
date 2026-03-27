@@ -5,6 +5,7 @@
 #include "WaveManager.h"
 #include <memory>
 #include <unordered_map>
+#include <raylib.h>
 
 
 class Game 
@@ -19,23 +20,32 @@ public:
     void changeState(GameStateID id);
 
     // World access for states
-    Player& getPlayer() { return m_player; }
+    Player& getPlayer() { return player; }
 
-    WaveManager& getWaveManager() { return m_waveManager; }
+    WaveManager& getWaveManager() { return waveManager; }
 
-    int getScore() const { return m_score; }
+    int getScore() const { return score; }
 
-    void addScore(int v) { m_score += v;  }
+    void addScore(int v) { score += v;  }
 
     void resetWorld();
 
+    float getPixelSize() const { return pixelSize; }
+
+
 private:
     void initStates();
+    void initShader();
 
-    Player m_player;
-    WaveManager m_waveManager;
-    int m_score {0};
+    Player player;
+    WaveManager waveManager;
+    int score {0};
 
-    std::unordered_map<GameStateID, std::unique_ptr<IGameState>> m_states;
-    IGameState* m_currentState {nullptr};
+    std::unordered_map<GameStateID, std::unique_ptr<IGameState>> states;
+    IGameState* currentState {nullptr};
+
+    RenderTexture2D renderTarget {};
+    Shader pixelShader {};
+    int pixelSizeLoc {-1};
+    float pixelSize {4.0f};
 };

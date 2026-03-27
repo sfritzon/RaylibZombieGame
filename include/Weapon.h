@@ -16,15 +16,15 @@ public:
 
     WeaponType  getType() const { return m_type; }
     const char* getName() const;
-    float getCooldown() const { return m_cooldown; }
-    float getFireRate() const { return m_fireRate; }
-    bool canFire() const { return m_cooldown <= 0.0f; }
+    float getCooldown() const { return cooldown; }
+    float getFireRate() const { return fireRate; }
+    bool canFire() const { return cooldown <= 0.0f; }
 
 private:
     WeaponType m_type;
-    float m_fireRate;
-    float m_damage;
-    float m_bulletSpeed;
-    float m_bulletRadius;
-    float m_cooldown {0.0f};
+    float fireRate;
+    float damage;
+    float bulletSpeed;
+    float bulletRadius;
+    float cooldown {0.0f};
 };

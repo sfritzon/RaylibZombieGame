@@ -3,6 +3,7 @@
 #include "BulletPool.h"
 #include "AudioManager.h"
 #include "Constants.h"
+#include "HealthPackManager.h"
 #include "raylib.h"
 
 
@@ -12,6 +13,7 @@ Game::Game()
     SetTargetFPS(60);
     SetExitKey(KEY_NULL);
     AudioManager::instance().init();
+    initShader();
     initStates();
     changeState(GameStateID::MAIN_MENU);
 }
@@ -19,6 +21,8 @@ Game::Game()
 
 Game::~Game() 
 {
+    UnloadShader(pixelShader);
+    UnloadRenderTexture(renderTarget);
     AudioManager::instance().shutdown();
     CloseWindow();
 }
@@ -26,29 +30,38 @@ Game::~Game()
 
 void Game::initStates() 
 {
-    m_states[GameStateID::MAIN_MENU] = std::make_unique<MainMenuState>();
-    m_states[GameStateID::PLAYING] = std::make_unique<PlayingState>();
-    m_states[GameStateID::PAUSED] = std::make_unique<PausedState>();
-    m_states[GameStateID::GAME_OVER] = std::make_unique<GameOverState>();
+    states[GameStateID::MAIN_MENU] = std::make_unique<MainMenuState>();
+    states[GameStateID::PLAYING] = std::make_unique<PlayingState>();
+    states[GameStateID::PAUSED] = std::make_unique<PausedState>();
+    states[GameStateID::GAME_OVER] = std::make_unique<GameOverState>();
 }
 
 
 void Game::changeState(GameStateID id) 
 {
-    if (m_currentState) m_currentState->exit(*this);
-    m_currentState = m_states[id].get();
-    m_currentState->enter(*this);
+    if (currentState) currentState->exit(*this);
+    currentState = states[id].get();
+    currentState->enter(*this);
 }
 
 
 void Game::resetWorld() 
 {
-    m_score = 0;
-    m_player.reset();
+    score = 0;
+    player.reset();
     BulletPool::instance().reset();
-    m_waveManager.reset();
+    HealthPackManager::instance().draw();
+    waveManager.reset();
 }
 
+
+void Game::initShader()
+{
+    renderTarget = LoadRenderTexture(SCREEN_WIDTH, SCREEN_HEIGHT);
+    pixelShader = LoadShader(0, "resources/Shaders/pixelation.fs");
+    pixelSizeLoc = GetShaderLocation(pixelShader, "pixelSize");
+    SetShaderValue(pixelShader, pixelSizeLoc, &pixelSize, SHADER_UNIFORM_FLOAT);
+}
 
 void Game::run() 
 {
@@ -59,14 +72,46 @@ void Game::run()
 
         AudioManager::instance().update();
 
-        if (m_currentState) 
+        // Game increases in pixelSize when health goes down
+
+        if (currentState && currentState->getID() == GameStateID::PLAYING)
         {
-            m_currentState->handleInput(*this);
-            m_currentState->update(*this, deltaTime);
+            float healthRatio = player.getHealth() / player.getMaxHealth();
+            pixelSize = 1.0f + (1.0f - healthRatio) * 10.0f; // Scales pixeSize from 1 at full HP to 20 at 0 HP
+        }
+        else
+        {
+            pixelSize = 1.0f;
         }
 
+        SetShaderValue(pixelShader, pixelSizeLoc, &pixelSize, SHADER_UNIFORM_FLOAT);
+
+        if (currentState) 
+        {
+            currentState->handleInput(*this);
+            currentState->update(*this, deltaTime);
+        }
+
+
+        BeginTextureMode(renderTarget);
+
+        if (currentState) currentState->draw(*this);
+
+        EndTextureMode();
+
         BeginDrawing();
-        if (m_currentState) m_currentState->draw(*this);
+        ClearBackground(BLACK);
+        BeginShaderMode(pixelShader);
+
+        DrawTextureRec(
+            renderTarget.texture,
+            { 0, 0, (float) renderTarget.texture.width, 
+            -(float)renderTarget.texture.height },
+            { 0, 0 },
+            WHITE
+        );
+
+        EndShaderMode();
         EndDrawing();
     }
 }

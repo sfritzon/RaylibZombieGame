@@ -20,14 +20,14 @@ class WaveManager
 {
 public:
     void reset();
-    bool update(float dt);
+    bool update(float deltaTime);
     void draw() const;
 
-    int getWave() const { return m_wave; }
-    float getWaveTimer() const { return m_waveTimer; }
-    bool isWaveComplete() const { return m_waveTimer <= 0.0f && m_allSpawned; }
+    int getWave() const { return wave; }
+    float getWaveTimer() const { return waveTimer; }
+    bool isWaveComplete() const { return waveTimer <= 0.0f && allSpawned; }
 
-    Enemy* getEnemies() { return m_enemies.data(); }
+    Enemy* getEnemies() { return enemies.data(); }
     int getEnemyCount() const { return MAX_ENEMIES; }
 
 private:
@@ -35,15 +35,15 @@ private:
     void startNextWave();
     Vector2 randomSpawnPos() const;
 
-    int m_wave {0};
-    float m_waveTimer {0};
-    bool m_allSpawned {false};
+    int wave {0};
+    float waveTimer {0};
+    bool allSpawned {false};
 
-    std::array<Enemy, MAX_ENEMIES> m_enemies;
+    std::array<Enemy, MAX_ENEMIES> enemies;
 
     // Spawn scheduling
     static const int MAX_GROUPS = 4;
-    SpawnGroup m_groups[MAX_GROUPS];
-    float m_betweenGroupTimer {0};
-    int m_groupIndex {0};
+    SpawnGroup groups[MAX_GROUPS];
+    float betweenGroupTimer {0};
+    int groupIndex {0};
 };
