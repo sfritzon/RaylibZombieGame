@@ -11,23 +11,23 @@ AudioManager& AudioManager::instance()
 
 void AudioManager::init()
 {
-    if (m_initialized) return;
+    if (initialized) return;
     InitAudioDevice();
 
     if (FileExists("resources/Audio/menu.mp3"))
-    m_menuMusic = LoadMusicStream("resources/Audio/menu.mp3");
+    menuMusic = LoadMusicStream("resources/Audio/menu.mp3");
 
     if (FileExists("resources/Audio/game.mp3"))
-    m_gameMusic = LoadMusicStream("resources/Audio/game.mp3");
+    gameMusic = LoadMusicStream("resources/Audio/game.mp3");
 
     if (FileExists("resources/Audio/gameOver.mp3"))
-    m_gameOverMusic = LoadMusicStream("resources/Audio/gameOver.mp3");
+    gameOverMusic = LoadMusicStream("resources/Audio/gameOver.mp3");
 
-    m_menuMusic.looping = true;
-    m_gameMusic.looping = true;
-    m_gameOverMusic.looping = true;
+    menuMusic.looping = true;
+    gameMusic.looping = true;
+    gameOverMusic.looping = true;
 
-    m_initialized = true;
+    initialized = true;
 }
 
 
@@ -35,93 +35,93 @@ void AudioManager::shutdown()
 {
     stopMusic();
 
-    if (m_initialized)
+    if (initialized)
     {
-        if (m_menuMusic.stream.buffer != nullptr)
-            UnloadMusicStream(m_menuMusic);
+        if (menuMusic.stream.buffer != nullptr)
+            UnloadMusicStream(menuMusic);
 
-        if (m_gameMusic.stream.buffer != nullptr)
-            UnloadMusicStream(m_gameMusic);
+        if (gameMusic.stream.buffer != nullptr)
+            UnloadMusicStream(gameMusic);
 
-        if (m_gameOverMusic.stream.buffer != nullptr)
-            UnloadMusicStream(m_gameOverMusic);
+        if (gameOverMusic.stream.buffer != nullptr)
+            UnloadMusicStream(gameOverMusic);
 
         CloseAudioDevice();
-        m_initialized = false;
+        initialized = false;
     }
 }
 
 
 void AudioManager::playMenuMusic() 
 {
-    if (!m_initialized) return;
-    if (m_current == &m_menuMusic && IsMusicStreamPlaying(m_menuMusic)) return;
+    if (!initialized) return;
+    if (current == &menuMusic && IsMusicStreamPlaying(menuMusic)) return;
 
-    if (m_current && IsMusicStreamPlaying(*m_current))
-        StopMusicStream(*m_current);
+    if (current && IsMusicStreamPlaying(*current))
+        StopMusicStream(*current);
 
-    m_current = &m_menuMusic;
-    SetMusicVolume(m_menuMusic, m_ducked ? m_duckVolume : m_fullVolume);
-    PlayMusicStream(m_menuMusic);
+    current = &menuMusic;
+    SetMusicVolume(menuMusic, ducked ? duckVolume : fullVolume);
+    PlayMusicStream(menuMusic);
 }
 
 
 void AudioManager::playGameMusic() 
 {
-    if (!m_initialized) return;
-    if (m_current == &m_gameMusic && IsMusicStreamPlaying(m_gameMusic)) return;
+    if (!initialized) return;
+    if (current == &gameMusic && IsMusicStreamPlaying(gameMusic)) return;
 
-    if (m_current && IsMusicStreamPlaying(*m_current))
-        StopMusicStream(*m_current);
+    if (current && IsMusicStreamPlaying(*current))
+        StopMusicStream(*current);
 
-    m_current = &m_gameMusic;
-    SetMusicVolume(m_gameMusic, m_ducked ? m_duckVolume : m_fullVolume);
-    PlayMusicStream(m_gameMusic);
+    current = &gameMusic;
+    SetMusicVolume(gameMusic, ducked ? duckVolume : fullVolume);
+    PlayMusicStream(gameMusic);
 }
 
 
 void AudioManager::playGameOverMusic()
 {
-    if (!m_initialized) return;
-    if (m_current == &m_gameOverMusic && IsMusicStreamPlaying(m_gameOverMusic)) return;
+    if (!initialized) return;
+    if (current == &gameOverMusic && IsMusicStreamPlaying(gameOverMusic)) return;
 
-    if (m_current && IsMusicStreamPlaying(*m_current))
-    StopMusicStream(*m_current);
+    if (current && IsMusicStreamPlaying(*current))
+    StopMusicStream(*current);
 
-    m_current = &m_gameOverMusic;
-    SetMusicVolume(m_gameOverMusic, m_ducked ? m_duckVolume : m_fullVolume);
-    PlayMusicStream(m_gameOverMusic);
+    current = &gameOverMusic;
+    SetMusicVolume(gameOverMusic, ducked ? duckVolume : fullVolume);
+    PlayMusicStream(gameOverMusic);
 }
 
 
 void AudioManager::stopMusic() 
 {
-    if (!m_initialized) return;
-    if (m_current) {
-        StopMusicStream(*m_current);
-        m_current = nullptr;
+    if (!initialized) return;
+    if (current) {
+        StopMusicStream(*current);
+        current = nullptr;
     }
 }
 
 
 void AudioManager::setDucked(bool ducked) 
 {
-    if (m_ducked == ducked) return;
-    m_ducked = ducked;
+    if (ducked == ducked) return;
+    ducked = ducked;
     applyVolume();
 }
 
 
 void AudioManager::applyVolume() 
 {
-    if (!m_initialized || !m_current) return;
-    SetMusicVolume(*m_current, m_ducked ? m_duckVolume : m_fullVolume);
+    if (!initialized || !current) return;
+    SetMusicVolume(*current, ducked ? duckVolume : fullVolume);
 }
 
 
 void AudioManager::update() 
 {
-    if (!m_initialized || !m_current) return;
-    UpdateMusicStream(*m_current);
+    if (!initialized || !current) return;
+    UpdateMusicStream(*current);
 }
 

@@ -3,6 +3,7 @@
 #include "AudioManager.h"
 #include "BulletPool.h"
 #include "Constants.h"
+#include "HealthPackManager.h"
 #include "raylib.h"
 #include <cmath>
 #include <cstring>
@@ -10,8 +11,8 @@
 
 void MainMenuState::enter(Game&) 
 {
-    m_selected = 0;
-    m_anim = 0.0f;
+    selected = 0;
+    anim = 0.0f;
     AudioManager::instance().setDucked(false);
     AudioManager::instance().playMenuMusic();
 }
@@ -19,11 +20,11 @@ void MainMenuState::enter(Game&)
 
 void MainMenuState::handleInput(Game& game) 
 {
-    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) m_selected = 0;
-    if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) m_selected = 1;
+    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) selected = 0;
+    if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) selected = 1;
     if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) 
     {
-        if (m_selected == 0) 
+        if (selected == 0) 
         {
             game.resetWorld();
             game.changeState(GameStateID::PLAYING);
@@ -40,7 +41,7 @@ void MainMenuState::handleInput(Game& game)
 
 void MainMenuState::update(Game&, float deltaTime) 
 {
-    m_anim += deltaTime;
+    anim += deltaTime;
 }
 
 
@@ -52,7 +53,7 @@ void MainMenuState::draw(Game&)
     for (int x = 0; x < SCREEN_WIDTH; x += 50)
         for (int y = 0; y < SCREEN_HEIGHT; y += 50) 
         {
-            float pulse = 0.3f + 0.15f * sinf(m_anim * 1.2f + x * 0.01f + y * 0.01f);
+            float pulse = 0.3f + 0.15f * sinf(anim * 1.2f + x * 0.01f + y * 0.01f);
             DrawCircle(x, y, 1.5f, { 40, 80, 140, (unsigned char)(pulse * 255) });
         }
 
@@ -75,8 +76,8 @@ void MainMenuState::draw(Game&)
     const char* opts[] = { "START GAME", "QUIT" };
     for (int i = 0; i < 2; ++i) 
     {
-        bool select = (i == m_selected);
-        float bounce = select ? sinf(m_anim * 4.0f) * 3.0f : 0.0f;
+        bool select = (i == selected);
+        float bounce = select ? sinf(anim * 4.0f) * 3.0f : 0.0f;
         int y = 280 + i * 70 + (int)bounce;
 
         Color c = select ? Color{ 255, 220, 60, 255 } : Color{ 160, 180, 200, 200 };
@@ -86,16 +87,11 @@ void MainMenuState::draw(Game&)
         if (select) 
         {
             // Highlight box
-            int w = MeasureText(opts[i], size
-) + 30;
+            int w = MeasureText(opts[i], size) + 30;
 
-            DrawRectangle(SCREEN_WIDTH / 2 - w / 2, y - 6, w, size
-     + 10, 
-                { 255, 220, 60, 30 });
+            DrawRectangle(SCREEN_WIDTH / 2 - w / 2, y - 6, w, size + 10, { 255, 220, 60, 30 });
 
-            DrawRectangleLines(SCREEN_WIDTH / 2 - w / 2, y - 6, w, size
-     + 10,
-                { 255, 220, 60, 120 });
+            DrawRectangleLines(SCREEN_WIDTH / 2 - w / 2, y - 6, w, size + 10, { 255, 220, 60, 120 });
         }
 
         DrawText(opts[i], SCREEN_WIDTH / 2 - MeasureText(opts[i], size) / 2, y, size, c);
@@ -105,8 +101,7 @@ void MainMenuState::draw(Game&)
     // Menu instructions
     int intSpace = 450;
     const char* howTitle = "HOW TO PLAY";
-    DrawText(howTitle, SCREEN_WIDTH / 2 - MeasureText(howTitle, 26) / 2, intSpace, 27, 
-        { 200, 200, 255, 255 });
+    DrawText(howTitle, SCREEN_WIDTH / 2 - MeasureText(howTitle, 26) / 2, intSpace, 27, { 200, 200, 255, 255 });
     intSpace += 65;
 
     struct Tip { const char* key; const char* desc; };
@@ -173,6 +168,14 @@ void PlayingState::update(Game& game, float deltaTime)
 
     BulletPool::instance().update(deltaTime);
 
+    HealthPackManager::instance().update(
+        deltaTime,
+        player.getPosition(),
+        player.getRadius(),
+        player.getHealthRef(),
+        player.getMaxHealth()
+    );
+
     // Update enemies, deal damage to player
     for (int i = 0; i < MAX_ENEMIES; ++i) 
     {
@@ -181,8 +184,8 @@ void PlayingState::update(Game& game, float deltaTime)
 
     // Check if enemy is touching player
     float dx = e.position.x - player.getPosition().x;
-    float dy = e.position.y - player.getPosition().y;
-    float dist = sqrtf(dx * dx + dy * dy);
+    float distY = e.position.y - player.getPosition().y;
+    float dist = sqrtf(dx * dx + distY * distY);
 
     if (dist < e.radius + player.getRadius()) 
     {
@@ -223,9 +226,9 @@ void PlayingState::updateBulletEnemyCollisions(Game& game)
             Enemy& e = waveManager.getEnemies()[ei];
             if (!e.active) continue;
 
-            float dx = b.position.x - e.position.x;
-            float dy = b.position.y - e.position.y;
-            float dist2 = dx * dx + dy * dy;
+            float distX = b.position.x - e.position.x;
+            float distY = b.position.y - e.position.y;
+            float dist2 = distX * distX + distY * distY;
             float radSum = b.radius + e.radius;
 
             if (dist2 < radSum * radSum) 
@@ -233,12 +236,25 @@ void PlayingState::updateBulletEnemyCollisions(Game& game)
                 e.health -= b.damage;
                 b.active = false;
 
-                if (e.isDead()) 
+                if (e.isDead())
                 {
                     e.active = false;
                     game.addScore(e.type == EnemyType::ZOMBIE ? 10 : 30);
+
+                    if (e.type == EnemyType::TANK)
+                    {
+                        // Counts the remaining active tanks before current dies
+                        int activeTanks = 0;
+                        for (int ti = 0; ti < MAX_ENEMIES; ++ti)
+                        {
+                            if (waveManager.getEnemies()[ti].active && waveManager.getEnemies()[ti].type == EnemyType::TANK)
+                                activeTanks++;
+
+                        }
+
+                        HealthPackManager::instance().trySpawn(e.position, activeTanks);
+                    }
                 }
-                break;
             }
         }
     }
@@ -290,7 +306,9 @@ void PlayingState::drawHUD(Game& game) const
 
 void PlayingState::draw(Game& game) 
 {
+
     ClearBackground({ 12, 14, 22, 255 });
+
 
     // Grid
     for (int x = 0; x < SCREEN_WIDTH; x += 60)
@@ -300,6 +318,8 @@ void PlayingState::draw(Game& game)
 
     // World objects
     BulletPool::instance().draw();
+
+    HealthPackManager::instance().draw();
 
     WaveManager& waveManager = game.getWaveManager();
     for (int i = 0; i < MAX_ENEMIES; ++i)
@@ -317,15 +337,17 @@ void PausedState::handleInput(Game& game)
 {
     if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER)) 
     {
-        if (m_selected == 0 || IsKeyPressed(KEY_ESCAPE)) {
+        if (selected == 0 || IsKeyPressed(KEY_ESCAPE)) {
             game.changeState(GameStateID::PLAYING);
         }
     }
-    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) m_selected = 0;
-    if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) m_selected = 1;
+
+    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) selected = 0;
+    if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) selected = 1;
+
     if (IsKeyPressed(KEY_ENTER)) 
     {
-        if (m_selected == 0) game.changeState(GameStateID::PLAYING);
+        if (selected == 0) game.changeState(GameStateID::PLAYING);
         else game.changeState(GameStateID::MAIN_MENU);
     }
 }
@@ -347,7 +369,8 @@ void PausedState::draw(Game& game)
 
     BulletPool::instance().draw();
     WaveManager& waveManager = game.getWaveManager();
-    for (int i = 0; i < MAX_ENEMIES; ++i) waveManager.getEnemies()[i].draw();
+
+    for (int i = 0; i < MAX_ENEMIES; ++i) waveManager.getEnemies()[i].draw(); 
     game.getPlayer().draw();
 
     // Overlay
@@ -363,9 +386,10 @@ void PausedState::draw(Game& game)
     DrawText(pauseTitle, SCREEN_WIDTH / 2 - MeasureText(pauseTitle, 42) / 2, py + 24, 42, { 80, 200, 255, 255 });
 
     const char* opts[] = { "CONTINUE", "MAIN MENU" };
+
     for (int i = 0; i < 2; ++i)
     {
-        bool select = (i == m_selected);
+        bool select = (i == selected);
 
         Color c = select ? Color{ 255, 220, 60, 255 } : Color{ 160, 180, 200, 200 };
 
@@ -381,10 +405,10 @@ void PausedState::draw(Game& game)
 
         DrawText(opts[i], SCREEN_WIDTH / 2 - MeasureText(opts[i], size) / 2, y, size, c);
     }
-
+    
     DrawText("W/S to selectect  •  ENTER to confirm  •  ESC to resume",
-             SCREEN_WIDTH / 2 - MeasureText("W/S to selectect  •  ENTER to confirm  •  ESC to resume", 12) / 2,
-             py + ph - 24, 12, { 80, 100, 140, 180 });
+            SCREEN_WIDTH / 2 - MeasureText("W/S to selectect  •  ENTER to confirm  •  ESC to resume", 12) / 2,
+            py + ph - 24, 12, { 80, 100, 140, 180 });
 }
 
 
@@ -396,8 +420,8 @@ void PausedState::exit(Game&)
 // Game over state
 void GameOverState::enter(Game& game) 
 {
-    m_finalScore = game.getScore();
-    m_finalWave  = game.getWaveManager().getWave();
+    finalScore = game.getScore();
+    finalWave  = game.getWaveManager().getWave();
     AudioManager::instance().setDucked(false);
     AudioManager::instance().playMenuMusic();
 }
@@ -439,8 +463,8 @@ void GameOverState::draw(Game&)
     DrawText(goText, SCREEN_WIDTH / 2 - MeasureText(goText, siz) / 2, 300, siz, { 220, 50, 50, 255 });
 
     // Stats
-    const char* scoreText = TextFormat("Score: %d", m_finalScore);
-    const char* waveText  = TextFormat("Reached Wave: %d", m_finalWave);
+    const char* scoreText = TextFormat("Score: %d", finalScore);
+    const char* waveText  = TextFormat("Reached Wave: %d", finalWave);
     DrawText(scoreText, SCREEN_WIDTH / 2 - MeasureText(scoreText, 32) / 2, 425, 32, { 255, 220, 80, 255 });
     DrawText(waveText,  SCREEN_WIDTH / 2 - MeasureText(waveText,  24) / 2, 465, 24, LIGHTGRAY);
 

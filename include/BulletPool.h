@@ -23,10 +23,10 @@ public:
 
     void reset();
     void spawn(Vector2 pos, Vector2 dir, float speed, float radius, float damage, int weaponType);
-    void update(float dt);
+    void update(float deltaTime);
     void draw() const;
 
-    Bullet* getBullets() { return m_bullets; }
+    Bullet* getBullets() { return bullets; }
     int getCount() const { return MAX_BULLETS; }
 
 private:
@@ -34,5 +34,5 @@ private:
     BulletPool(const BulletPool&) = delete;
     BulletPool& operator=(const BulletPool&) = delete;
 
-    Bullet m_bullets[MAX_BULLETS];
+    Bullet bullets[MAX_BULLETS];
 };

@@ -26,14 +26,14 @@ private:
 
     void applyVolume();
 
-    Music m_menuMusic {};
-    Music m_gameMusic {};
-    Music m_gameOverMusic {};
-    Music* m_current {nullptr};
+    Music menuMusic {};
+    Music gameMusic {};
+    Music gameOverMusic {};
+    Music* current {nullptr};
 
-    bool m_initialized {false};
-    bool m_ducked {false};
+    bool initialized {false};
+    bool ducked {false};
 
-    float m_fullVolume {0.7f};
-    float m_duckVolume {0.2f};
+    float fullVolume {0.7f};
+    float duckVolume {0.2f};
 };

@@ -11,16 +11,16 @@ public:
     Player();
 
     void reset();
-    void handleInput(float dt);
-    void update(float dt);
+    void handleInput(float deltaTime);
+    void update(float deltaTime);
     void draw() const;
 
     void takeDamage(float amount);
-    bool isDead() const { return m_health <= 0.0f; }
-    float getHealth() const { return m_health; }
-    float& getHealthRef() { return m_health; }
+    bool isDead() const { return health <= 0.0f; }
+    float getHealth() const { return health; }
+    float& getHealthRef() { return health; }
     float getMaxHealth() const;
-    Vector2 getPosition() const { return m_position; }
+    Vector2 getPosition() const { return position; }
     float getRadius() const;
 
     WeaponType getCurrentWeaponType() const;
@@ -29,12 +29,12 @@ public:
     float getWeaponFireRate() const;
 
 private:
-    Vector2 m_position {640, 360};
-    float m_health;
+    Vector2 position {640, 360};
+    float health;
 
-    std::unique_ptr<Weapon> m_pistol;
-    std::unique_ptr<Weapon> m_sniper;
-    Weapon* m_currentWeapon {nullptr};
+    std::unique_ptr<Weapon> pistol;
+    std::unique_ptr<Weapon> sniper;
+    Weapon* currentWeapon {nullptr};
 
-    float m_invincibleTimer {0.0f};
+    float invisibleTimer {0.0f};
 };
