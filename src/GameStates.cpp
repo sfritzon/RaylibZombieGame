@@ -4,6 +4,7 @@
 #include "BulletPool.h"
 #include "Constants.h"
 #include "HealthPackManager.h"
+#include "TimeBoostManager.h"
 #include "raylib.h"
 #include <cmath>
 #include <cstring>
@@ -18,21 +19,48 @@ void MainMenuState::enter(Game&)
 }
 
 
-void MainMenuState::handleInput(Game& game) 
+void MainMenuState::handleInput(Game& game)
 {
+    // Mouse position
+    Vector2 mouse = GetMousePosition();
+
+    // Match the Y positions and sizes from draw()
+    const char* opts[] = { "START GAME", "QUIT" };
+    for (int i = 0; i < 2; ++i)
+    {
+        int size = 34; // Use the selected size since hover acts as selected
+        int y = 280 + i * 70;
+        int w = MeasureText(opts[i], size) + 30;
+        int x = SCREEN_WIDTH / 2 - w / 2;
+
+        // Check if mouse is hovering over this option
+        if (mouse.x >= x && mouse.x <= x + w &&
+            mouse.y >= y - 6 && mouse.y <= y - 6 + size + 10)
+        {
+            selected = i;
+
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            {
+                if (selected == 0)
+                {
+                    game.resetWorld();
+                    game.changeState(GameStateID::PLAYING);
+                }
+                else
+                {
+                    CloseWindow();
+                }
+            }
+        }
+    }
+
+    // Keep keyboard support as well
     if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) selected = 0;
     if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) selected = 1;
-    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) 
+    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))
     {
-        if (selected == 0) 
-        {
-            game.resetWorld();
-            game.changeState(GameStateID::PLAYING);
-        } 
-        else 
-        {
-            CloseWindow();
-        }
+        if (selected == 0) { game.resetWorld(); game.changeState(GameStateID::PLAYING); }
+        else CloseWindow();
     }
 
     if (IsKeyPressed(KEY_ESCAPE)) CloseWindow();
@@ -155,6 +183,20 @@ void PlayingState::handleInput(Game& game)
     {
         game.resetWorld();
     }
+
+    //DEBUG: kill all zombies instantly
+    if (IsKeyPressed(KEY_K))
+    {
+        WaveManager& waveManager = game.getWaveManager();
+        for (int i = 0; i < MAX_ENEMIES; ++i)
+        {
+            Enemy& e = waveManager.getEnemies()[i];
+            if (e.active && e.type == EnemyType::ZOMBIE)
+            e.active = false;
+            if (e.active && e.type == EnemyType::TANK)
+            e.active = false;
+        }
+    }
 }
 
 
@@ -174,6 +216,13 @@ void PlayingState::update(Game& game, float deltaTime)
         player.getRadius(),
         player.getHealthRef(),
         player.getMaxHealth()
+    );
+
+    TimeBoostManager::instance().update(
+        deltaTime,
+        player.getPosition(),
+        player.getRadius(),
+        waveManager.getWaveTimerRef()
     );
 
     // Update enemies, deal damage to player
@@ -240,6 +289,11 @@ void PlayingState::updateBulletEnemyCollisions(Game& game)
                 {
                     e.active = false;
                     game.addScore(e.type == EnemyType::ZOMBIE ? 10 : 30);
+
+                    if (e.type == EnemyType::ZOMBIE)
+                    {
+                        TimeBoostManager::instance().trySpawn( e.position, game.getWaveManager().getWave());
+                    }
 
                     if (e.type == EnemyType::TANK)
                     {
@@ -320,6 +374,7 @@ void PlayingState::draw(Game& game)
     BulletPool::instance().draw();
 
     HealthPackManager::instance().draw();
+    TimeBoostManager::instance().draw();
 
     WaveManager& waveManager = game.getWaveManager();
     for (int i = 0; i < MAX_ENEMIES; ++i)
@@ -333,23 +388,44 @@ void PlayingState::draw(Game& game)
 }
 
 // Paused state
-void PausedState::handleInput(Game& game) 
+void PausedState::handleInput(Game& game)
 {
-    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER)) 
+    Vector2 mouse = GetMousePosition();
+
+    int pw = 380, ph = 240;
+    int px = SCREEN_WIDTH / 2 - pw / 2, py = SCREEN_HEIGHT / 2 - ph / 2;
+
+    const char* opts[] = { "CONTINUE", "MAIN MENU" };
+    for (int i = 0; i < 2; ++i)
     {
-        if (selected == 0 || IsKeyPressed(KEY_ESCAPE)) {
-            game.changeState(GameStateID::PLAYING);
+        int size = 30;
+        int y = py + 110 + i * 60;
+        int w = MeasureText(opts[i], size) + 24;
+        int x = SCREEN_WIDTH / 2 - w / 2;
+
+        if (mouse.x >= x && mouse.x <= x + w &&
+            mouse.y >= y - 4 && mouse.y <= y - 4 + size + 8)
+        {
+            selected = i;
+
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            {
+                if (selected == 0) game.changeState(GameStateID::PLAYING);
+                else game.changeState(GameStateID::MAIN_MENU);
+            }
         }
     }
 
+    // Keep keyboard support
     if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) selected = 0;
     if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) selected = 1;
-
-    if (IsKeyPressed(KEY_ENTER)) 
+    if (IsKeyPressed(KEY_ENTER))
     {
         if (selected == 0) game.changeState(GameStateID::PLAYING);
         else game.changeState(GameStateID::MAIN_MENU);
     }
+
+    if (IsKeyPressed(KEY_ESCAPE)) game.changeState(GameStateID::PLAYING);
 }
 
 

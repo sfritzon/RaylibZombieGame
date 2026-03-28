@@ -25,6 +25,7 @@ public:
 
     int getWave() const { return wave; }
     float getWaveTimer() const { return waveTimer; }
+    float& getWaveTimerRef() { return waveTimer; }
     bool isWaveComplete() const { return waveTimer <= 0.0f && allSpawned; }
 
     Enemy* getEnemies() { return enemies.data(); }

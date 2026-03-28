@@ -1,4 +1,5 @@
 #include "HealthPackManager.h"
+#include "AudioManager.h"
 #include "raylib.h"
 #include <cmath>
 
@@ -66,6 +67,7 @@ void HealthPackManager::update(float deltaTime, Vector2 playerPos, float playerR
         {
             playerHealth += p.healAmount;
             if (playerHealth > playerMaxHealth) playerHealth = playerMaxHealth;
+            AudioManager::instance().playPickup();
             p.active = false;
         }
     }

@@ -59,8 +59,8 @@ void BulletPool::draw() const
     {
         if (!bullets[i].active) continue;
         Color c = (bullets[i].weaponType == 0)
-                  ? Color{ 200, 0, 200, 255 }   // Pistol is purple
-                  : Color{ 255, 100, 20, 255 };  // Sniper is orange
+                ? Color{ 200, 0, 200, 255 }   // Pistol is purple
+                : Color{ 255, 100, 20, 255 };  // Sniper is orange
 
         DrawCircleV(bullets[i].position, bullets[i].radius, c);
         DrawCircleV(bullets[i].position, bullets[i].radius + 3.0f, { c.r, c.g, c.b, 50 });

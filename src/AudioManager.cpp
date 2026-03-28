@@ -23,6 +23,18 @@ void AudioManager::init()
     if (FileExists("resources/Audio/gameOver.mp3"))
     gameOverMusic = LoadMusicStream("resources/Audio/gameOver.mp3");
 
+    if (FileExists("resources/Audio/pistol.mp3"))
+    soundPistol = LoadSound("resources/Audio/pistol.mp3");
+
+    if (FileExists("resources/Audio/sniper.mp3"))
+    soundSniper = LoadSound("resources/Audio/sniper.mp3");
+
+    if (FileExists("resources/Audio/pickup.mp3"))
+    pickUp = LoadSound("resources/Audio/pickup.mp3");
+
+    if (FileExists("resources/Audio/damage.mp3"))
+    damageSound = LoadSound("resources/Audio/damage.mp3");
+
     menuMusic.looping = true;
     gameMusic.looping = true;
     gameOverMusic.looping = true;
@@ -45,6 +57,9 @@ void AudioManager::shutdown()
 
         if (gameOverMusic.stream.buffer != nullptr)
             UnloadMusicStream(gameOverMusic);
+
+        UnloadSound(soundPistol);
+        UnloadSound(soundSniper);
 
         CloseAudioDevice();
         initialized = false;
@@ -94,6 +109,39 @@ void AudioManager::playGameOverMusic()
 }
 
 
+void AudioManager::playSoundPistol()
+{
+    if (!initialized) return;
+    SetSoundVolume(soundPistol, ducked ? duckVolume : fullVolume);
+    PlaySound(soundPistol);
+}
+
+
+void AudioManager::playSoundSniper()
+{
+    if (!initialized) return;
+    SetSoundVolume(soundSniper, ducked ? duckVolume : fullVolume);
+    PlaySound(soundSniper);
+}
+
+
+void AudioManager::playPickup()
+{
+    if(!initialized) return;
+    SetSoundVolume(pickUp, ducked ? duckVolume : fullVolume);
+    PlaySound(pickUp);
+}
+
+
+void AudioManager::playDamageSound()
+{
+    if(!initialized) return;
+    SetSoundVolume(damageSound, ducked ? duckVolume : fullVolume);
+    PlaySound(damageSound);
+}
+
+
+
 void AudioManager::stopMusic() 
 {
     if (!initialized) return;
@@ -104,10 +152,10 @@ void AudioManager::stopMusic()
 }
 
 
-void AudioManager::setDucked(bool ducked) 
+void AudioManager::setDucked(bool newDucked) 
 {
-    if (ducked == ducked) return;
-    ducked = ducked;
+    if (ducked == newDucked) return;
+    ducked = newDucked;
     applyVolume();
 }
 
