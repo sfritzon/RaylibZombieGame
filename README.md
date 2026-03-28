@@ -22,6 +22,7 @@
 10. [Architecture](#10-architecture)
 11. [Tuning](#11-tuning)
 12. [Scoring](#12-scoring)
+13. [Building](#13-building)
     
 ---
 ## 1. Project Overview and Requirements
@@ -226,5 +227,56 @@ static const float WAVE_DURATION     = 30.0f;
 Score is tracked in `Game` and displayed in the top-right corner during play. Your final score and wave reached are shown on the game over screen.
 
 ---
+## 13. Building
 
+### For Linux:
+
+```
+bashmake config=release_x64
+```
+
+1. Then run it with:
+
+```
+bash./bin/Release/ZombieGame
+```
+
+2. Use the ZombieArena.sh launcher script for double-click support. Bundle to share:
+
+```
+bashmkdir ZombieArena
+cp bin/Release/ZombieGame ZombieArena/
+cp -r resources/ ZombieArena/
+cp ZombieArena.sh ZombieArena/
+zip -r ZombieArenaLinux.zip ZombieArena/`
+```
+
+### For Windows: 
+
+1. Install MinGW:
+
+```
+sudo apt install mingw-w64
+```
+
+2. Download raylib-5.5_win64_mingw-w64.zip from https://github.com/raysan5/raylib/releases and extract to ~/raylib-win/
+3. Compile
+
+```
+x86_64-w64-mingw32-g++ src/*.cpp \
+  -I include \
+  -I ~/raylib-win/raylib-5.5_win64_mingw-w64/include \
+  -L ~/raylib-win/raylib-5.5_win64_mingw-w64/lib \
+  -lraylib -lopengl32 -lgdi32 -lwinmm -lm \
+  -static -std=c++17 \
+  -o ZombieArena/ZombieGame.exe
+```
+
+4. Bundle and Zip
+
+```
+cp -r resources/ ZombieArena/
+zip -r ZombieArenaWindows.zip ZombieArena/
+```
+5. Windows players just unzip and double-click ZombieGame.exe.
 
