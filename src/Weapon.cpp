@@ -1,6 +1,7 @@
 #include "Weapon.h"
 #include "BulletPool.h"
 #include "Constants.h"
+#include "AudioManager.h"
 #include <cmath>
 
 
@@ -35,7 +36,12 @@ void Weapon::fire(Vector2 origin, Vector2 targetDir)
 
     int typeInt = (m_type == WeaponType::PISTOL) ? 0 : 1;
 
-BulletPool::instance().spawn(origin, dir, bulletSpeed, bulletRadius, damage, typeInt);
+    BulletPool::instance().spawn(origin, dir, bulletSpeed, bulletRadius, damage, typeInt);
+
+    if (m_type == WeaponType::PISTOL)
+        AudioManager::instance().playSoundPistol();
+    else
+        AudioManager::instance().playSoundSniper();
 
     cooldown = fireRate;
 }

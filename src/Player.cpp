@@ -2,6 +2,7 @@
 #include "BulletPool.h"
 #include "Constants.h"
 #include "WaveManager.h"
+#include "AudioManager.h"
 #include "raylib.h"
 #include <cmath>
 
@@ -123,6 +124,7 @@ void Player::takeDamage(float amount)
     if (invisibleTimer > 0.0f) return;
     health -= amount;
     if (health < 0) health = 0;
+    AudioManager::instance().playDamageSound();
     invisibleTimer = 0.4f;
 }
 

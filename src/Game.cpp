@@ -4,7 +4,8 @@
 #include "AudioManager.h"
 #include "Constants.h"
 #include "HealthPackManager.h"
-#include "raylib.h"
+#include "TimeBoostManager.h"
+#include <raylib.h>
 
 
 Game::Game() 
@@ -50,7 +51,8 @@ void Game::resetWorld()
     score = 0;
     player.reset();
     BulletPool::instance().reset();
-    HealthPackManager::instance().draw();
+    HealthPackManager::instance().reset();
+    TimeBoostManager::instance().reset();
     waveManager.reset();
 }
 

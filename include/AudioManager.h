@@ -14,6 +14,10 @@ public:
     void playMenuMusic();
     void playGameMusic();
     void playGameOverMusic();
+    void playSoundPistol();
+    void playSoundSniper();
+    void playPickup();
+    void playDamageSound();
     void stopMusic();
 
     void setDucked(bool ducked);
@@ -30,6 +34,10 @@ private:
     Music gameMusic {};
     Music gameOverMusic {};
     Music* current {nullptr};
+    Sound soundPistol{};
+    Sound soundSniper{};
+    Sound pickUp{};
+    Sound damageSound{};
 
     bool initialized {false};
     bool ducked {false};

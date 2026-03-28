@@ -127,6 +127,7 @@ GENERATED += $(OBJDIR)/Player.o
 GENERATED += $(OBJDIR)/WaveManager.o
 GENERATED += $(OBJDIR)/Weapon.o
 GENERATED += $(OBJDIR)/HealthPackManager.o
+GENERATED += $(OBJDIR)/TimeBoostManager.o
 GENERATED += $(OBJDIR)/main.o
 OBJECTS += $(OBJDIR)/AudioManager.o
 OBJECTS += $(OBJDIR)/BulletPool.o
@@ -137,6 +138,7 @@ OBJECTS += $(OBJDIR)/Player.o
 OBJECTS += $(OBJDIR)/WaveManager.o
 OBJECTS += $(OBJDIR)/Weapon.o
 OBJECTS += $(OBJDIR)/HealthPackManager.o
+OBJECTS += $(OBJDIR)/TimeBoostManager.o
 OBJECTS += $(OBJDIR)/main.o
 
 # Rules
@@ -226,6 +228,9 @@ $(OBJDIR)/Weapon.o: src/Weapon.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/HealthPackManager.o: src/HealthPackManager.cpp
+	@echo "$(notdir $<)"
+	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
+$(OBJDIR)/TimeBoostManager.o: src/TimeBoostManager.cpp
 	@echo "$(notdir $<)"
 	$(SILENT) $(CXX) $(ALL_CXXFLAGS) $(FORCE_INCLUDE) -o "$@" -MF "$(@:%.o=%.d)" -c "$<"
 $(OBJDIR)/main.o: src/main.cpp
