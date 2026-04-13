@@ -3,11 +3,11 @@
 #include <raylib.h>
 
 
-static const int MAX_TIME_BOOSTS = 10;
-static const float TIME_BOOST_RADIUS = 12.0f;
+static const int MAX_TIME_BOOSTS = 1;
+static const float TIME_BOOST_RADIUS = 20.0f;
 static const float TIME_BOOST_LIFETIME = 10.0f;
-static const int TIME_BOOST_MIN_WAVE = 5;
-static const int TIME_BOOST_DROP_CHANCE = 12;
+static const int TIME_BOOST_MIN_WAVE = 10;
+static const int TIME_BOOST_DROP_CHANCE = 1;
 
 
 struct TimeBoost
