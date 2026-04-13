@@ -32,10 +32,13 @@ public:
 
     float getPixelSize() const { return pixelSize; }
 
+    void exit();
 
 private:
     void initStates();
     void initShader();
+
+    bool shouldExit = false;
 
     Player player;
     WaveManager waveManager;

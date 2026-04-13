@@ -65,9 +65,14 @@ void Game::initShader()
     SetShaderValue(pixelShader, pixelSizeLoc, &pixelSize, SHADER_UNIFORM_FLOAT);
 }
 
+void Game::exit()
+{
+    shouldExit = true;
+}
+
 void Game::run() 
 {
-    while (!WindowShouldClose()) 
+    while (!(WindowShouldClose() || shouldExit))
     {
         float deltaTime = GetFrameTime();
         deltaTime = (deltaTime > 0.05f) ? 0.05f : deltaTime;  // Cap deltaTime to prevent spiral of death
