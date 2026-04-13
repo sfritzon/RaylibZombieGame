@@ -48,7 +48,7 @@ void MainMenuState::handleInput(Game& game)
                 }
                 else
                 {
-                    CloseWindow();
+		     game.exit();
                 }
             }
         }
@@ -60,10 +60,10 @@ void MainMenuState::handleInput(Game& game)
     if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))
     {
         if (selected == 0) { game.resetWorld(); game.changeState(GameStateID::PLAYING); }
-        else CloseWindow();
+        else game.exit();
     }
 
-    if (IsKeyPressed(KEY_ESCAPE)) CloseWindow();
+    if (IsKeyPressed(KEY_ESCAPE)) game.exit();
 }
 
 
