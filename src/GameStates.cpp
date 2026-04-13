@@ -24,7 +24,7 @@ void MainMenuState::handleInput(Game& game)
     // Mouse position
     Vector2 mouse = GetMousePosition();
 
-    // Match the Y positions and sizes from draw()
+    // Match the Y positions and sizes from draw
     const char* opts[] = { "START GAME", "QUIT" };
     for (int i = 0; i < 2; ++i)
     {
@@ -54,7 +54,7 @@ void MainMenuState::handleInput(Game& game)
         }
     }
 
-    // Keep keyboard support as well
+    // Keyboard support
     if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) selected = 0;
     if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) selected = 1;
     if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))
