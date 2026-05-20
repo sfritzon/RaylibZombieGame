@@ -5,6 +5,7 @@
 #include "Constants.h"
 #include "HealthPackManager.h"
 #include "TimeBoostManager.h"
+#include "Scoreboard.h"
 #include <raylib.h>
 
 
@@ -14,6 +15,7 @@ Game::Game()
     SetTargetFPS(60);
     SetExitKey(KEY_NULL);
     AudioManager::instance().init();
+    Scoreboard::instance().load();
     initShader();
     initStates();
     changeState(GameStateID::MAIN_MENU);

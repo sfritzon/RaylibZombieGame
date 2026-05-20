@@ -28,12 +28,16 @@ public:
     float getWeaponCooldown() const;
     float getWeaponFireRate() const;
 
+    bool isLaserBeamActive() const;
+    Vector2 getLaserBeamOrigin() const;
+    Vector2 getLaserBeamDir() const;
+
 private:
     Vector2 position {640, 360};
     float health;
 
     std::unique_ptr<Weapon> pistol;
-    std::unique_ptr<Weapon> sniper;
+    std::unique_ptr<Weapon> laser;
     Weapon* currentWeapon {nullptr};
 
     float invisibleTimer {0.0f};

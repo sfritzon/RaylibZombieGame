@@ -15,6 +15,8 @@ public:
 private:
     int selected {0}; // 0 = Start, 1 = Quit
     float anim {0};
+    float confirmTimer {0};
+    int confirmedOption {-1};
 };
 
 
@@ -31,6 +33,7 @@ public:
 private:
     void updateBulletEnemyCollisions(Game& game);
     void drawHUD(Game& game) const;
+    float laserDamageTimer {0.0f};
 };
 
 
@@ -61,4 +64,10 @@ public:
 private:
     int finalScore {0};
     int finalWave  {0};
+    char initials[5] {0};
+    int currentSlot {0};
+    int letterIndex[4] {0};
+    bool submitted {false};
+    bool showScoreboard {false};
+    char latestInitials[5] {0};
 };

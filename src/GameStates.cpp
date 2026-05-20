@@ -6,14 +6,19 @@
 #include "HealthPackManager.h"
 #include "TimeBoostManager.h"
 #include "raylib.h"
+#include "Scoreboard.h"
 #include <cmath>
 #include <cstring>
 
+
+//---------------------------------------------------------------------------MENU STATE---------------------------------------------------------------------------//
 
 void MainMenuState::enter(Game&) 
 {
     selected = 0;
     anim = 0.0f;
+    confirmTimer = 0.0f;
+    confirmedOption = -1;
     AudioManager::instance().setDucked(false);
     AudioManager::instance().playMenuMusic();
 }
@@ -25,8 +30,8 @@ void MainMenuState::handleInput(Game& game)
     Vector2 mouse = GetMousePosition();
 
     // Match the Y positions and sizes from draw
-    const char* opts[] = { "START GAME", "QUIT" };
-    for (int i = 0; i < 2; ++i)
+    const char* opts[] = { "START GAME", "NEW SCOREBOARD", "QUIT GAME" };
+    for (int i = 0; i < 3; ++i)
     {
         int size = 34; // Use the selected size since hover acts as selected
         int y = 280 + i * 70;
@@ -46,30 +51,45 @@ void MainMenuState::handleInput(Game& game)
                     game.resetWorld();
                     game.changeState(GameStateID::PLAYING);
                 }
+                else if (selected == 1)
+                {
+                    Scoreboard::instance().reset();
+                    confirmTimer = 0.6f;
+                    confirmedOption = 1;
+                }
                 else
                 {
-		     game.exit();
+                    CloseWindow();
                 }
             }
         }
     }
 
     // Keyboard support
-    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) selected = 0;
-    if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) selected = 1;
+    if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) selected = (selected + 1) % 3;
+    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) selected = (selected + 2) % 3;
+
     if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))
     {
-        if (selected == 0) { game.resetWorld(); game.changeState(GameStateID::PLAYING); }
-        else game.exit();
-    }
-
-    if (IsKeyPressed(KEY_ESCAPE)) game.exit();
+        if (selected == 0) 
+        { 
+            game.resetWorld(); game.changeState(GameStateID::PLAYING); 
+        }
+        else if (selected == 1) 
+        { 
+            Scoreboard::instance().reset();
+            confirmTimer = 0.6f;
+            confirmedOption = 1;
+        }
+        else CloseWindow();
+    } 
 }
 
 
 void MainMenuState::update(Game&, float deltaTime) 
 {
     anim += deltaTime;
+    if (confirmTimer > 0.0f) confirmTimer -= deltaTime;
 }
 
 
@@ -78,8 +98,8 @@ void MainMenuState::draw(Game&)
     ClearBackground({ 8, 8, 18, 255 });
 
     // Animated grid dots for the funz
-    for (int x = 0; x < SCREEN_WIDTH; x += 50)
-        for (int y = 0; y < SCREEN_HEIGHT; y += 50) 
+    for (int x = 0; x < SCREEN_WIDTH; x += 100)
+        for (int y = 0; y < SCREEN_HEIGHT; y += 100) 
         {
             float pulse = 0.3f + 0.15f * sinf(anim * 1.2f + x * 0.01f + y * 0.01f);
             DrawCircle(x, y, 1.5f, { 40, 80, 140, (unsigned char)(pulse * 255) });
@@ -101,24 +121,26 @@ void MainMenuState::draw(Game&)
     , 25, { 140, 180, 220, 200 });
 
     // Menu options
-    const char* opts[] = { "START GAME", "QUIT" };
-    for (int i = 0; i < 2; ++i) 
+    const char* opts[] = { "START GAME", "NEW SCOREBOARD", "QUIT GAME" };
+    for (int i = 0; i < 3; ++i)
     {
         bool select = (i == selected);
-        float bounce = select ? sinf(anim * 4.0f) * 3.0f : 0.0f;
-        int y = 280 + i * 70 + (int)bounce;
+        bool confirmed = (confirmTimer > 0.0f && confirmedOption == i);
+        float bounce = select && !confirmed ? sinf(anim * 4.0f) * 3.0f : 0.0f;
+        int y = 270 + i * 70 + (int)bounce;
 
-        Color c = select ? Color{ 255, 220, 60, 255 } : Color{ 160, 180, 200, 200 };
+        Color c;
+        if (confirmed) c = Color{ 120, 120, 120, 200 };
+        else if (select) c = Color{ 255, 220, 60, 255 };
+        else c = Color{ 160, 180, 200, 200 };
         
         int size = select ? 34 : 28;
         
-        if (select) 
+        if (select && !confirmed) 
         {
-            // Highlight box
             int w = MeasureText(opts[i], size) + 30;
 
             DrawRectangle(SCREEN_WIDTH / 2 - w / 2, y - 6, w, size + 10, { 255, 220, 60, 30 });
-
             DrawRectangleLines(SCREEN_WIDTH / 2 - w / 2, y - 6, w, size + 10, { 255, 220, 60, 120 });
         }
 
@@ -127,7 +149,7 @@ void MainMenuState::draw(Game&)
 
 
     // Menu instructions
-    int intSpace = 450;
+    int intSpace = 500;
     const char* howTitle = "HOW TO PLAY";
     DrawText(howTitle, SCREEN_WIDTH / 2 - MeasureText(howTitle, 26) / 2, intSpace, 27, { 200, 200, 255, 255 });
     intSpace += 65;
@@ -167,7 +189,7 @@ void MainMenuState::draw(Game&)
 }
 
 
-// Playing state
+//---------------------------------------------------------------------------PLAYING STATE---------------------------------------------------------------------------//
 void PlayingState::enter(Game&) 
 {
     AudioManager::instance().setDucked(false);
@@ -253,10 +275,59 @@ void PlayingState::update(Game& game, float deltaTime)
 
     updateBulletEnemyCollisions(game);
 
-    if (waveManager.update(deltaTime))
-        game.changeState(GameStateID:: GAME_OVER);
+    laserDamageTimer -= deltaTime;
+    
+    if (player.isLaserBeamActive() && laserDamageTimer <= 0.0f)
+    {
+        laserDamageTimer = LASER_DAMAGE_INTERVAL;
+        
+        Vector2 beamOrigin = player.getLaserBeamOrigin();
+        Vector2 beamDir    = player.getLaserBeamDir();
 
-    if (player.isDead()) game.changeState(GameStateID::GAME_OVER);
+        for (int i = 0; i < MAX_ENEMIES; ++i)
+        {
+            Enemy& e = waveManager.getEnemies()[i];
+            if (!e.active) continue;
+
+            float ex   = e.position.x - beamOrigin.x;
+            float ey   = e.position.y - beamOrigin.y;
+            float proj = ex * beamDir.x + ey * beamDir.y;
+            
+            if (proj < 0) continue;
+
+            float closestX = beamOrigin.x + beamDir.x * proj;
+            float closestY = beamOrigin.y + beamDir.y * proj;
+            float distX = e.position.x - closestX;
+            float distY = e.position.y - closestY;
+            float dist2 = distX * distX + distY * distY;
+
+            if (dist2 < e.radius * e.radius)
+            {
+                e.health -= LASER_DAMAGE;
+
+                if (e.isDead())
+                {
+                    e.active = false;
+                    game.addScore(e.type == EnemyType::ZOMBIE ? 10 : 30);
+
+                    if (e.type == EnemyType::ZOMBIE)
+                    TimeBoostManager::instance().trySpawn(e.position, waveManager.getWave());
+
+                    if (e.type == EnemyType::TANK)
+                    {
+                        int activeTanks = 0;
+                        for (int ti = 0; ti < MAX_ENEMIES; ++ti)
+                        if (waveManager.getEnemies()[ti].active && waveManager.getEnemies()[ti].type == EnemyType::TANK)
+                            activeTanks++;
+                            HealthPackManager::instance().trySpawn(e.position, activeTanks);
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (waveManager.update(deltaTime)) game.changeState(GameStateID::GAME_OVER);
+        if (player.isDead()) game.changeState(GameStateID::GAME_OVER);
 }
 
 
@@ -319,8 +390,8 @@ void PlayingState::drawHUD(Game& game) const
 {
     Player& player = game.getPlayer();
 
-    bool isSniper = player.getCurrentWeaponType() == WeaponType::SNIPER;
-    Color wpnColor = isSniper ? Color{ 255, 160, 30, 255 } : Color{ 200, 0, 200, 255 }; // First: sniper, Second: pistol
+    bool isLaser = player.getCurrentWeaponType() == WeaponType::LASER;
+    Color wpnColor = isLaser ? Color{ 255, 160, 30, 255 } : Color{ 200, 0, 200, 255 };
 
     // Weapon name
     DrawText(TextFormat("Weapon: %s  [Q] Swap", player.getCurrentWeaponName()),
@@ -387,7 +458,7 @@ void PlayingState::draw(Game& game)
     drawHUD(game);
 }
 
-// Paused state
+//---------------------------------------------------------------------------PAUSED STATE---------------------------------------------------------------------------//
 void PausedState::handleInput(Game& game)
 {
     Vector2 mouse = GetMousePosition();
@@ -493,59 +564,185 @@ void PausedState::exit(Game&)
     AudioManager::instance().setDucked(false);
 }
 
-// Game over state
-void GameOverState::enter(Game& game) 
+//---------------------------------------------------------------------------GAME OVER STATE---------------------------------------------------------------------------//
+void GameOverState::enter(Game& game)
 {
     finalScore = game.getScore();
-    finalWave  = game.getWaveManager().getWave();
-    AudioManager::instance().setDucked(false);
-    AudioManager::instance().playMenuMusic();
-}
+    finalWave = game.getWaveManager().getWave();
+    currentSlot = 0;
+    submitted = false;
+    showScoreboard = false;
 
-void GameOverState::handleInput(Game& game) 
-{
+    for (int i = 0; i < 4; ++i) 
+    {
+        letterIndex[i] = 0;
+        initials[0] = '\0';
+        latestInitials[0] = '\0';
+    }
+
+    Scoreboard::instance().load();
     AudioManager::instance().setDucked(false);
     AudioManager::instance().playGameOverMusic();
-    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {}
+}
 
-    if (IsKeyPressed(KEY_R)) 
+
+void GameOverState::handleInput(Game& game)
+{
+    if (!submitted)
     {
-        game.resetWorld();
-        game.changeState(GameStateID::PLAYING);
+        // Cycle letter up
+        if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W))
+            letterIndex[currentSlot] = (letterIndex[currentSlot] + 1) % 26;
+
+        // Cycle letter down
+        if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S))
+            letterIndex[currentSlot] = (letterIndex[currentSlot] + 25) % 26;
+
+        // Move right
+        if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D))
+            if (currentSlot < 3) currentSlot++;
+
+        // Move left
+        if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A))
+            if (currentSlot > 0) currentSlot--;
+
+        // Confirm initials
+        if (IsKeyPressed(KEY_ENTER))
+        {
+            for (int i = 0; i < 4; ++i) 
+            {
+                initials[i] = 'A' + letterIndex[i];
+                initials[4] = '\0';
+                strncpy(latestInitials, initials, 5);
+            }
+
+            Scoreboard::instance().addEntry(initials, finalScore, finalWave);
+            submitted = true;
+        }
     }
-
-    if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_M)) 
+    else
     {
-        game.changeState(GameStateID::MAIN_MENU);
+        // Toggle scoreboard view
+        if (IsKeyPressed(KEY_TAB) || IsKeyPressed(KEY_Q))
+            showScoreboard = !showScoreboard;
+
+        if (IsKeyPressed(KEY_R))
+        {
+            game.resetWorld();
+            game.changeState(GameStateID::PLAYING);
+        }
+
+        if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_M))
+            game.changeState(GameStateID::MAIN_MENU);
     }
 }
 
-void GameOverState::draw(Game&) 
+
+void GameOverState::draw(Game&)
 {
     ClearBackground({ 8, 4, 10, 255 });
+    const int yOffset = 150;
 
-    // Dramatic red vignette
-    for (int i = 0; i < 8; ++i) 
+    // Red vignette
+    for (int i = 0; i < 8; ++i)
     {
         unsigned char alpha = (unsigned char)(30 - i * 3);
-        DrawRectangleLinesEx({ (float)i * 12, (float)i * 8,
-                               (float)(SCREEN_WIDTH - i * 24), (float)(SCREEN_HEIGHT - i * 16) },
-                             12, { 180, 30, 30, alpha });
+        DrawRectangleLinesEx({ (float)i * 12, (float)i * 8, (float)(SCREEN_WIDTH - i * 24), 
+                            (float)(SCREEN_HEIGHT - i * 16) }, 12, { 180, 30, 30, alpha });
     }
 
+    // GAME OVER title
     const char* goText = "GAME OVER";
-    int siz = 110;
-    DrawText(goText, SCREEN_WIDTH / 2 - MeasureText(goText, siz) / 2 + 3, 303, siz, { 80, 0, 0, 200 });
-    DrawText(goText, SCREEN_WIDTH / 2 - MeasureText(goText, siz) / 2, 300, siz, { 220, 50, 50, 255 });
+    int siz = 90;
+    DrawText(goText, SCREEN_WIDTH / 2 - MeasureText(goText, siz) / 2 + 3, 53 + yOffset, siz, { 80, 0, 0, 200 });
+    DrawText(goText, SCREEN_WIDTH / 2 - MeasureText(goText, siz) / 2, 50 + yOffset, siz, { 220, 50, 50, 255 });
 
-    // Stats
-    const char* scoreText = TextFormat("Score: %d", finalScore);
-    const char* waveText  = TextFormat("Reached Wave: %d", finalWave);
-    DrawText(scoreText, SCREEN_WIDTH / 2 - MeasureText(scoreText, 32) / 2, 425, 32, { 255, 220, 80, 255 });
-    DrawText(waveText,  SCREEN_WIDTH / 2 - MeasureText(waveText,  24) / 2, 465, 24, LIGHTGRAY);
+    // Score and wave
+    const char* statsText = TextFormat("Score: %d     Wave: %d", finalScore, finalWave);
+    DrawText(statsText, SCREEN_WIDTH / 2 - MeasureText(statsText, 24) / 2, 155 + yOffset, 24, { 200, 220, 255, 200 });
 
-    DrawText("[ R ]  Restart",
-             SCREEN_WIDTH / 2 - MeasureText("[ R ]  Restart", 24) / 2, 530, 24, { 80, 200, 255, 255 });
-    DrawText("[ ENTER / ESC ]  Main Menu",
-             SCREEN_WIDTH / 2 - MeasureText("[ ENTER / ESC ]  Main Menu", 20) / 2, 560, 20, { 140, 160, 200, 200 });
+    // Divider
+    DrawRectangle(SCREEN_WIDTH / 2 - 300, 190 + yOffset, 600, 1, { 80, 40, 40, 180 });
+
+    if (!submitted)
+    {
+        // Initials input section
+        const char* enterText = "ENTER YOUR INITIALS";
+        DrawText(enterText, SCREEN_WIDTH / 2 - MeasureText(enterText, 28) / 2, 210 + yOffset, 28, { 255, 220, 60, 255 });
+
+        const char* sub = "W/S change letter   A/D move   ENTER confirm";
+        DrawText(sub, SCREEN_WIDTH / 2 - MeasureText(sub, 16) / 2, 248 + yOffset, 16, { 140, 160, 200, 180 });
+
+        // Letter slots
+        int slotSize = 70;
+        int slotGap = 20;
+        int totalW = 4 * slotSize + 3 * slotGap;
+        int startX = SCREEN_WIDTH / 2 - totalW / 2;
+        int slotY = 320 + yOffset;
+
+        for (int i = 0; i < 4; ++i)
+        {
+            int x = startX + i * (slotSize + slotGap);
+            bool sel = (i == currentSlot);
+
+            DrawRectangle(x, slotY, slotSize, slotSize, sel ? Color{ 255, 220, 60, 60 } : Color{ 30, 40, 60, 200 });
+            DrawRectangleLines(x, slotY, slotSize, slotSize, sel ? Color{ 255, 220, 60, 255 } : Color{ 80, 100, 140, 200 });
+
+            char letter[2] = { (char)('A' + letterIndex[i]), '\0' };
+            int lw = MeasureText(letter, 48);
+            DrawText(letter, x + slotSize / 2 - lw / 2, slotY + 11, 48, sel ? Color{ 255, 220, 60, 255 } : Color{ 200, 220, 255, 255 });
+
+            if (sel)
+            {
+                DrawText("^", x + slotSize / 2 - 8, slotY - 24, 22, { 255, 220, 60, 200 });
+                DrawText("v", x + slotSize / 2 - 8, slotY + slotSize + 6, 22, { 255, 220, 60, 200 });
+            }
+        }
+    }
+    else if (!showScoreboard)
+    {
+        // Confirmed initials display
+        const char* savedText = TextFormat("Saved as: %s", latestInitials);
+        DrawText(savedText, SCREEN_WIDTH / 2 - MeasureText(savedText, 32) / 2, 220 + yOffset, 32, { 255, 220, 60, 255 });
+
+        const char* tabText = "[ TAB ]  View Scoreboard";
+        DrawText(tabText, SCREEN_WIDTH / 2 - MeasureText(tabText, 20) / 2, 290 + yOffset, 20, { 140, 180, 220, 200 });
+    }
+    else
+    {
+        // Scoreboard view
+        const char* lbTitle = "HIGH SCORES";
+        DrawText(lbTitle, SCREEN_WIDTH / 2 - MeasureText(lbTitle, 28) / 2, 210 + yOffset, 28, { 255, 220, 60, 255 });
+
+        const Scoreboard& sb = Scoreboard::instance();
+        int rowY = 255 + yOffset;
+
+        for (int i = 0; i < sb.getCount(); ++i)
+        {
+            const ScoreEntry& e = sb.getEntries()[i];
+            bool isLatest = (strcmp(e.initials, latestInitials) == 0 && e.score == finalScore);
+            Color c = isLatest ? Color{ 255, 220, 60, 255 } : Color{ 180, 200, 220, 220 };
+            const char* row = TextFormat("%d.  %s     %d pts     Wave %d", i + 1, e.initials, e.score, e.wave);
+            DrawText(row, SCREEN_WIDTH / 2 - MeasureText(row, 22) / 2, rowY, 22, c);
+            rowY += 35;
+        }
+    }
+
+    // Bottom divider
+    DrawRectangle(SCREEN_WIDTH / 2 - 300, 430 + yOffset, 600, 1, { 80, 40, 40, 180 });
+
+    // Action buttons — only shown after submitting
+    if (submitted)
+    {
+        DrawText("[ R ]  Play Again",
+                 SCREEN_WIDTH / 2 - MeasureText("[ R ]  Play Again", 24) / 2, 450 + yOffset, 24, { 80, 200, 255, 255 });
+        DrawText("[ ESC / M ]  Main Menu",
+                 SCREEN_WIDTH / 2 - MeasureText("[ ESC / M ]  Main Menu", 20) / 2, 485 + yOffset, 20, { 140, 160, 200, 200 });
+    }
+    else
+    {
+        DrawText("Enter your initials to continue",
+                 SCREEN_WIDTH / 2 - MeasureText("Enter your initials to continue", 16) / 2, 450 + yOffset, 16, { 100, 120, 150, 160 });
+    }
 }
+
