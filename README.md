@@ -95,7 +95,7 @@ Score is displayed in the top-right. The wave number and wave timer are centered
 
 ### Build System
 
-- Linux (tested Pop! OS with COSMIC Desktop)
+- Linux
 - g++ with C++17 support
 - raylib (downloaded automatically by premake on first build)
 - premake5 (included in `build/`)
