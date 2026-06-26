@@ -17,10 +17,11 @@ static const float PISTOL_FIRE_RATE = 0.18f; // Timing between shots
 static const float PISTOL_BULLET_SPEED = 650.0f;
 static const float PISTOL_BULLET_RADIUS = 5.0f;
 
-static const float SNIPER_DAMAGE = 90.0f;
-static const float SNIPER_FIRE_RATE = 0.85f;
-static const float SNIPER_BULLET_SPEED = 1200.0f;
-static const float SNIPER_BULLET_RADIUS = 4.0f;
+static const float LASER_DAMAGE = 45.0f;
+static const float LASER_DAMAGE_INTERVAL = 0.1f;
+static const float LASER_FIRE_RATE = 6.0f;
+static const float LASER_DURATION = 3.0f;
+static const float LASER_WIDTH = 4.0f;
 
 // Bullet pool
 static const int MAX_BULLETS = 256;

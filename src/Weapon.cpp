@@ -4,57 +4,78 @@
 #include "AudioManager.h"
 #include <cmath>
 
-
-Weapon::Weapon(WeaponType type) : m_type(type) 
+Weapon::Weapon(WeaponType type) : w_type(type)
 {
-    switch (type) 
+    switch (type)
     {
-        case WeaponType::PISTOL:
-            fireRate = PISTOL_FIRE_RATE;
-            damage = PISTOL_DAMAGE;
-            bulletSpeed = PISTOL_BULLET_SPEED;
-            bulletRadius = PISTOL_BULLET_RADIUS;
-            break;
-            
-        case WeaponType::SNIPER:
-            fireRate = SNIPER_FIRE_RATE;
-            damage = SNIPER_DAMAGE;
-            bulletSpeed = SNIPER_BULLET_SPEED;
-            bulletRadius = SNIPER_BULLET_RADIUS;
-            break;
+    case WeaponType::PISTOL:
+        fireRate = PISTOL_FIRE_RATE;
+        damage = PISTOL_DAMAGE;
+        bulletSpeed = PISTOL_BULLET_SPEED;
+        bulletRadius = PISTOL_BULLET_RADIUS;
+        break;
+    case WeaponType::LASER:
+        fireRate = LASER_FIRE_RATE;
+        damage = LASER_DAMAGE;
+        bulletSpeed = 0.0f;
+        bulletRadius = 0.0f;
+        break;
     }
 }
 
 
-void Weapon::fire(Vector2 origin, Vector2 targetDir) 
+void Weapon::fire(Vector2 origin, Vector2 targetDir)
 {
     if (cooldown > 0.0f) return;
 
     float len = sqrtf(targetDir.x * targetDir.x + targetDir.y * targetDir.y);
     if (len < 0.001f) return;
+
     Vector2 dir = { targetDir.x / len, targetDir.y / len };
 
-    int typeInt = (m_type == WeaponType::PISTOL) ? 0 : 1;
-
-    BulletPool::instance().spawn(origin, dir, bulletSpeed, bulletRadius, damage, typeInt);
-
-    if (m_type == WeaponType::PISTOL)
+    if (w_type == WeaponType::PISTOL)
+    {
+        BulletPool::instance().spawn(origin, dir, bulletSpeed, bulletRadius, damage, 0);
         AudioManager::instance().playSoundPistol();
+        cooldown = fireRate;
+    }
+    else if (w_type == WeaponType::LASER)
+    {
+        if (!beamActive)
+        {
+            beamActive = true;
+            beamTimer = LASER_DURATION;
+            AudioManager::instance().playSoundSniper();
+        }
+
+        beamOrigin = origin;
+        beamDir = dir;
+    }
+}
+
+
+void Weapon::update(float deltaTime)
+{
+    if (beamActive)
+    {
+        beamTimer -= deltaTime;
+        
+        if (beamTimer <= 0.0f)
+        {
+            beamActive = false;
+            beamTimer = 0.0f;
+            cooldown = fireRate;  // Cooldown starts after beam ends
+        }
+    }
     else
-        AudioManager::instance().playSoundSniper();
-
-    cooldown = fireRate;
+    {
+        if (cooldown > 0.0f) cooldown -= deltaTime;
+        if (cooldown < 0.0f) cooldown = 0.0f;
+    }
 }
 
 
-void Weapon::update(float dt) 
+const char* Weapon::getName() const
 {
-    if (cooldown > 0.0f) cooldown -= dt;
-    if (cooldown < 0.0f) cooldown = 0.0f;
-}
-
-
-const char* Weapon::getName() const 
-{
-    return (m_type == WeaponType::PISTOL) ? "Pistol" : "Sniper";
+    return (w_type == WeaponType::PISTOL) ? "Pistol" : "Laser";
 }

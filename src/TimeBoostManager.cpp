@@ -23,7 +23,7 @@ void TimeBoostManager::trySpawn(Vector2 pos, int currentWave)
 
     if (currentWave <= TIME_BOOST_MIN_WAVE) return;
 
-    if (GetRandomValue(1, 100) > TIME_BOOST_DROP_CHANCE) return;
+    if (GetRandomValue(1, 1000) > TIME_BOOST_DROP_CHANCE) return;
 
     for (auto& b : boosts)
     {
