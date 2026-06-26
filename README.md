@@ -5,6 +5,7 @@
 >A top-down 2D wave survival shooter built with raylib and C++17. Fight off waves of Zombies and Tanks with two weapons, survive as long as you can!
 >
 >Build:
+`make`
 `./bin/Debug/ZombieGame`
 
 ---
